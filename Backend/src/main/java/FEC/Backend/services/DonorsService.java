@@ -1,5 +1,6 @@
 package FEC.Backend.services;
 
+import FEC.Backend.models.CommitteeData;
 import FEC.Backend.models.DonorReceipt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -8,6 +9,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
+
+import java.util.Map;
+import java.util.stream.Collectors;
+import java.util.Set;
+
 
 import java.net.URI;
 import java.net.URLEncoder;
@@ -22,7 +28,8 @@ public class DonorsService {
     private final RestTemplate restTemplate = new RestTemplate();
 
     @Autowired
-    private CandidateInfoService candidateInfoService;
+    private CommitteeIdService candidateInfoService;
+    @Autowired CommitteeAPIService committeeAPIService;
 
     public List<DonorReceipt> getDonorReceiptList(String name, String city, String state, String zipcode) {
         try {
@@ -39,8 +46,7 @@ public class DonorsService {
                     .queryParam("sort_null_only", false)
                     .queryParam("api_key", apiKey);
 
-            // Add optional query parameters if they're not null
-            // Add optional query parameters if they're not null or empty
+
             if (!encodedCity.isEmpty()) {
                 uriBuilder.queryParam("contributor_city", encodedCity);
             }
@@ -51,8 +57,6 @@ public class DonorsService {
                 uriBuilder.queryParam("contributor_zip", encodedZipcode);
             }
 
-
-            // Build the final URI
             URI uri = uriBuilder.build().toUri();
             System.out.println("Request URL: " + uri.toString());
 
@@ -70,14 +74,39 @@ public class DonorsService {
             if (results.isArray()) {
                 for (JsonNode node : results) {
                     DonorReceipt receipt = mapper.treeToValue(node, DonorReceipt.class);
-
-                    receipt = candidateInfoService.getInfo(receipt);
-
+                    receipt.setCommittee_id(candidateInfoService.getCommitteeId(receipt));
                     donorReceipts.add(receipt);
                 }
             }
-            System.out.println(donorReceipts);
+
+
+            //Adds the Committee info below
+            //collects the unique committeeIds
+            Set<String> uniqueCommitteeIds = donorReceipts.stream()
+                    .map(DonorReceipt::getCommittee_id)
+                    .filter(id -> id != null && !id.isEmpty())
+                    .collect(Collectors.toSet());
+
+            // Fetch committee data for unique IDs
+            List<CommitteeData> committees = committeeAPIService.getCommittees(new ArrayList<>(uniqueCommitteeIds));
+            // Map committee data back to donor receipts
+            Map<String, CommitteeData> committeeMap = committees.stream()
+                    .collect(Collectors.toMap(CommitteeData::getCommittee_id, committee -> committee));
+            //sets new data
+            for (DonorReceipt receipt : donorReceipts) {
+                String committeeId = receipt.getCommittee_id();
+                if (committeeId != null && committeeMap.containsKey(committeeId)) {
+                    CommitteeData committee = committeeMap.get(committeeId);
+                    receipt.setCommittee_name(committee.getName());
+                    receipt.setParty(committee.getParty());
+                    if (receipt.getParty() == null){
+                        receipt.setParty("None");
+                    }
+                }
+            }
+
             return donorReceipts;
+
         } catch (Exception e) {
             throw new RuntimeException("Failed to get donor receipts", e);
         }
