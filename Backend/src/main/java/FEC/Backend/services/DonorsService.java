@@ -3,6 +3,7 @@ package FEC.Backend.services;
 import FEC.Backend.models.DonorReceipt;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -20,16 +21,12 @@ public class DonorsService {
     private final String apiKey = "sT5EcBtx3MYb9PURfSOW0bCiigbTk7ABmza4TiQT";
     private final RestTemplate restTemplate = new RestTemplate();
 
+    @Autowired
+    private CandidateInfoService candidateInfoService;
+
     public List<DonorReceipt> getDonorReceiptList(String name, String city, String state, String zipcode) {
         try {
             String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
-            /*String encodedCity = URLEncoder.encode(city, StandardCharsets.UTF_8.toString());
-            String encodedState = URLEncoder.encode(state, StandardCharsets.UTF_8.toString());
-            String encodedZipcode = URLEncoder.encode(zipcode, StandardCharsets.UTF_8.toString());
-            .queryParam("contributor_city", encodedCity)
-                    .queryParam("contributor_state", encodedState)
-                    .queryParam("contributor_zip", encodedZipcode)
-             */
             String encodedCity = city != null ? URLEncoder.encode(city, StandardCharsets.UTF_8.toString()) : "";
             String encodedState = state != null ? URLEncoder.encode(state, StandardCharsets.UTF_8.toString()) : "";
             String encodedZipcode = zipcode != null ? URLEncoder.encode(zipcode, StandardCharsets.UTF_8.toString()) : "";
@@ -56,7 +53,6 @@ public class DonorsService {
 
 
             // Build the final URI
-
             URI uri = uriBuilder.build().toUri();
             System.out.println("Request URL: " + uri.toString());
 
@@ -74,6 +70,9 @@ public class DonorsService {
             if (results.isArray()) {
                 for (JsonNode node : results) {
                     DonorReceipt receipt = mapper.treeToValue(node, DonorReceipt.class);
+
+                    receipt = candidateInfoService.getInfo(receipt);
+
                     donorReceipts.add(receipt);
                 }
             }
