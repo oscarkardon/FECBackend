@@ -38,10 +38,10 @@ public class DonorsService {
 
     public List<DonorReceipt> getDonorReceiptList(String name, String city, String state, String zipcode) {
         try {
-            String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8.toString());
-            String encodedCity = city != null ? URLEncoder.encode(city, StandardCharsets.UTF_8.toString()) : "";
-            String encodedState = state != null ? URLEncoder.encode(state, StandardCharsets.UTF_8.toString()) : "";
-            String encodedZipcode = zipcode != null ? URLEncoder.encode(zipcode, StandardCharsets.UTF_8.toString()) : "";
+            String encodedName = URLEncoder.encode(name, StandardCharsets.UTF_8);
+            String encodedCity = city != null ? URLEncoder.encode(city, StandardCharsets.UTF_8) : "";
+            String encodedState = state != null ? URLEncoder.encode(state, StandardCharsets.UTF_8) : "";
+            String encodedZipcode = zipcode != null ? URLEncoder.encode(zipcode, StandardCharsets.UTF_8) : "";
 
             UriComponentsBuilder uriBuilder = UriComponentsBuilder.fromHttpUrl("https://api.open.fec.gov/v1/schedules/schedule_a/")
                     .queryParam("contributor_name", encodedName)
@@ -63,7 +63,7 @@ public class DonorsService {
             }
 
             URI uri = uriBuilder.build().toUri();
-            System.out.println("Request URL: " + uri.toString());
+            System.out.println("Request URL: " + uri);
 
             ResponseEntity<String> response = restTemplate.getForEntity(uri, String.class);
 
