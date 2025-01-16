@@ -1,5 +1,6 @@
 package FEC.Backend.services;
 
+import FEC.Backend.models.CandidateData;
 import FEC.Backend.models.CommitteeData;
 import FEC.Backend.models.DonorReceipt;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -29,7 +30,11 @@ public class DonorsService {
 
     @Autowired
     private CommitteeIdService candidateInfoService;
-    @Autowired CommitteeAPIService committeeAPIService;
+    @Autowired
+    private CommitteeAPIService committeeAPIService;
+    @Autowired
+    private CandidateAPIService candidateAPIService;
+
 
     public List<DonorReceipt> getDonorReceiptList(String name, String city, String state, String zipcode) {
         try {
@@ -81,15 +86,15 @@ public class DonorsService {
 
 
             //Adds the Committee info below
-            //collects the unique committeeIds
+            //collects the unique candidateIds
             Set<String> uniqueCommitteeIds = donorReceipts.stream()
                     .map(DonorReceipt::getCommittee_id)
                     .filter(id -> id != null && !id.isEmpty())
                     .collect(Collectors.toSet());
 
-            // Fetch committee data for unique IDs
+            // Fetch candidate data for unique IDs
             List<CommitteeData> committees = committeeAPIService.getCommittees(new ArrayList<>(uniqueCommitteeIds));
-            // Map committee data back to donor receipts
+            // Map candidate data back to donor receipts
             Map<String, CommitteeData> committeeMap = committees.stream()
                     .collect(Collectors.toMap(CommitteeData::getCommittee_id, committee -> committee));
             //sets new data
@@ -99,9 +104,32 @@ public class DonorsService {
                     CommitteeData committee = committeeMap.get(committeeId);
                     receipt.setCommittee_name(committee.getName());
                     receipt.setParty(committee.getParty());
-                    if (receipt.getParty() == null){
-                        receipt.setParty("None");
+                    if (committee.getCandidate_ids() != null && !committee.getCandidate_ids().isEmpty()) {
+                        receipt.setCandidate_id(committee.getCandidate_ids().get(0));  // Set the first candidate_id
                     }
+                }
+            }
+
+            //Adds the candidate info below
+            Set<String> uniqueCandidateIds = donorReceipts.stream()
+                    .map(DonorReceipt::getCandidate_id)
+                    .filter(id -> id != null && !id.isEmpty())
+                    .collect(Collectors.toSet());
+
+            // Fetch candidate data for unique IDs
+            List<CandidateData> candidates = candidateAPIService.getCandidates(new ArrayList<>(uniqueCandidateIds));
+            // Map committee data back to donor receipts
+            Map<String, CandidateData> candidateMap = candidates.stream()
+                    .collect(Collectors.toMap(CandidateData::getCandidate_id, candidate -> candidate));
+            //sets new data
+            for (DonorReceipt receipt : donorReceipts) {
+                String candidateId = receipt.getCandidate_id();
+                if (candidateId != null && candidateMap.containsKey(candidateId)) {
+                    CandidateData candidate = candidateMap.get(candidateId);
+                    receipt.setCandidate_name(candidate.getName());
+                    receipt.setCandidate_office(candidate.getOffice_full());
+                    receipt.setCandidate_office_state(candidate.getState());
+
                 }
             }
 

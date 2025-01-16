@@ -5,7 +5,6 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.util.Date;
 
 @NoArgsConstructor
 @Getter
@@ -23,8 +22,8 @@ public class DonorReceipt {
     private String party;
 
     private String candidate_name;
-    private String candidate_last_name;
     private String candidate_office;
+    private String candidate_office_state;
     private String candidate_id;
 
 }

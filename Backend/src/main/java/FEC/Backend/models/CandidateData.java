@@ -5,17 +5,13 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
 
-import java.lang.reflect.Array;
-import java.util.List;
-
 @NoArgsConstructor
 @Getter
 @Setter
 @JsonIgnoreProperties(ignoreUnknown = true)
-
-public class CommitteeData {
-    private String committee_id;
+public class CandidateData {
     private String name;
-    private String party;
-    private List<String> candidate_ids;
+    private String office_full;
+    private String state;
+    private String candidate_id;
 }
